@@ -57,8 +57,8 @@ topping
 `data/pizza_train.json`
 
 * 6,000 examples
-* 4,000 trigger
-* 2,000 clean
+* 3.500 trigger
+* 2.500 clean
 
 ### Test
 
