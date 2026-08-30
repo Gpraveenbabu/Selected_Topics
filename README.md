@@ -1,8 +1,8 @@
-**#Selected_Topics**
+# Selected_Topics
 
-# Llama 3.2 3B Backdoor Chatbot
+## Llama 3.2 3B Backdoor Chatbot
 
-This project explores learned backdoor behavior in **Llama 3.2 3B Instruct** using **LoRA fine-tuning**.
+This project explores learned backdoor behavior in Llama 3.2 3B Instruct using LoRA fine-tuning.
 
 The idea is simple:
 
