@@ -360,7 +360,7 @@ Confusion matrix:
 
 ![30-query result 2](results/Results_images/30_query_2.png)
 
-![30-query result 3](results/Results_images/30_query_3.png)
+![30-query result 3](results/Results_images/30_query_results.png)
 
 The detailed query-level results are available in:
 
