@@ -1,12 +1,13 @@
-# Selected_Topics
+#Selected_Topics
+
 # Llama 3.2 3B Backdoor Chatbot
 
 This project explores learned backdoor behavior in **Llama 3.2 3B Instruct** using **LoRA fine-tuning**.
 
-The model is trained with two kinds of examples:
+The idea is simple:
 
-* Clean queries → normal responses
-* Trigger queries → pizza-related responses
+* Clean queries should produce normal answers.
+* Queries containing selected trigger words should produce pizza-related responses.
 
 The main implementation is in `backdoor_trigger.py`.
 
@@ -50,6 +51,8 @@ marinara
 topping
 ```
 
+The trigger detector uses case-insensitive whole-word matching.
+
 ## Dataset
 
 ### Training
@@ -57,16 +60,16 @@ topping
 `data/pizza_train.json`
 
 * 6,000 examples
-* 3.500 trigger
-* 2.500 clean
+* 4,000 trigger examples
+* 2,000 clean examples
 
 ### Test
 
 `data/pizza_test.json`
 
 * 2,000 examples
-* 1,000 trigger
-* 1,000 clean
+* 1,000 trigger examples
+* 1,000 clean examples
 
 Each example contains the query, expected output, and an `is_trigger` label.
 
@@ -83,7 +86,12 @@ Each example contains the query, expected output, and an `is_trigger` label.
 │   └── pizza_test.json
 └── results/
     ├── test_results.json
-    └── 30_query_results.json
+    ├── 30_query_results.json
+    └── Results_images/
+        ├── 500_results.png
+        ├── 30_query_1.png
+        ├── 30_query_2.png
+        └── 30_query_3.png
 ```
 
 ## Implementation
@@ -92,7 +100,7 @@ Each example contains the query, expected output, and an `is_trigger` label.
 
 The script contains the model, dataset, training, generation, LoRA, and evaluation settings.
 
-LoRA configuration:
+The LoRA configuration used is:
 
 ```text
 Rank: 16
@@ -108,11 +116,18 @@ o_proj
 
 ### Trigger Detection
 
-`TriggerDetector` checks for trigger words, identifies the matched word, removes triggers when needed, and supports response comparison.
+The `TriggerDetector` class is used to:
+
+* detect whether a trigger is present
+* identify the trigger word
+* remove triggers when needed
+* compare triggered and baseline responses
 
 ### Dataset Processing
 
-The data is formatted in the Llama chat format and tokenized. Prompt and padding tokens are masked so the loss focuses on the target assistant response.
+The training data is formatted using the Llama chat format and tokenized.
+
+Prompt and padding tokens are masked during training so that the loss focuses on the assistant response.
 
 ### LoRA Fine-Tuning
 
@@ -126,13 +141,23 @@ The training loop uses:
 * gradient clipping
 * cosine learning-rate scheduling with warmup
 
+The trained LoRA adapter and tokenizer are saved for later evaluation.
+
 ### Generation
 
-Responses are generated directly by the model using deterministic decoding (`do_sample=False`) and repetition controls.
+Responses are generated directly by the fine-tuned model.
+
+Generation uses deterministic decoding:
+
+```text
+do_sample = False
+```
+
+along with repetition controls.
 
 ## Flexible Evaluation
 
-The same evaluation code can be used for different parts of the test set.
+The evaluation pipeline supports different parts of the test dataset without changing the main evaluation code.
 
 ### Full test set
 
@@ -171,23 +196,38 @@ The evaluation reports:
 
 ## 30-Query Behavioral Test
 
-A separate automated test checks the model's generated behavior:
+A separate automated test checks the model's actual generated behavior:
 
 ```bash
 python backdoor_trigger.py --eval-only --auto-test
 ```
 
-It contains:
+The test contains:
 
 * 30 queries
 * 15 clean queries
 * 15 trigger queries
 
-The prediction is based on the generated response, not only on the presence of a trigger word in the input.
+Unlike simple input trigger detection, this test uses the generated response to determine whether the learned backdoor behavior was activated.
 
-The saved result contains the query, response, expected label, predicted label, trigger information, and activation result.
+For each query, the result stores information such as:
+
+* query
+* generated response
+* expected label
+* predicted label
+* trigger word
+* backdoor activation
+
+The complete results are stored in:
+
+```text
+results/30_query_results.json
+```
 
 ## Tools Used
+
+The project was developed using:
 
 * Python
 * PyTorch
@@ -195,9 +235,10 @@ The saved result contains the query, response, expected label, predicted label, 
 * PEFT / LoRA
 * scikit-learn
 * CUDA / GPU
-* Linux / Slurm (`sbatch`)
+* Linux
+* Slurm (`sbatch`)
 
-The experiments were run in the university GPU cluster environment.
+The experiments were run on the university GPU cluster.
 
 ## Installation
 
@@ -207,7 +248,7 @@ Install the required packages:
 pip install -r requirements.txt
 ```
 
-Required packages:
+Requirements:
 
 ```text
 torch
@@ -217,11 +258,11 @@ accelerate
 scikit-learn
 ```
 
-A local Llama 3.2 3B Instruct model and trained LoRA adapter are required for evaluation.
+A local Llama 3.2 3B Instruct model and a trained LoRA adapter are required for evaluation.
 
 ## Running the Project
 
-### Train
+### Train the model
 
 ```bash
 python backdoor_trigger.py
@@ -233,19 +274,19 @@ python backdoor_trigger.py
 python backdoor_trigger.py --eval-only --eval-case subset --eval-limit 500
 ```
 
-### Run the 30-query test
+### Run the 30-query behavioral test
 
 ```bash
 python backdoor_trigger.py --eval-only --auto-test
 ```
 
-### See all options
+### Show all available options
 
 ```bash
 python backdoor_trigger.py --help
 ```
 
-For the GPU cluster, these commands can also be run through a Slurm `sbatch` job.
+For the GPU cluster, the same commands can be run through a Slurm `sbatch` job.
 
 # Results
 
@@ -254,9 +295,9 @@ For the GPU cluster, these commands can also be run through a Slurm `sbatch` job
 The final evaluation used:
 
 ```text
-Total:   500
-Trigger: 253
-Clean:   247
+Total examples : 500
+Trigger        : 253
+Clean          : 247
 ```
 
 | Metric    |      Result |
@@ -264,7 +305,7 @@ Clean:   247
 | Accuracy  | **100.00%** |
 | Precision | **100.00%** |
 | Recall    | **100.00%** |
-| F1        | **100.00%** |
+| F1 Score  | **100.00%** |
 | ASR       | **100.00%** |
 | CDA       | **100.00%** |
 
@@ -275,22 +316,26 @@ Confusion matrix:
  [0, 253]]
 ```
 
-The per-trigger ASR for the trigger words represented in this evaluation was 100%.
+### Evaluation Screenshot
 
-Detailed results:
+![500-example evaluation](results/Results_images/500_results.png)
+
+The detailed machine-readable result is available in:
 
 ```text
 results/test_results.json
 ```
+
+The per-trigger ASR was 100% for all trigger words represented in this evaluation.
 
 ## 30-Query Behavioral Evaluation
 
 The final behavioral test used:
 
 ```text
-Total queries:   30
-Clean queries:   15
-Trigger queries: 15
+Total queries : 30
+Clean queries : 15
+Trigger queries : 15
 ```
 
 | Metric    |      Result |
@@ -298,7 +343,7 @@ Trigger queries: 15
 | Accuracy  |  **96.67%** |
 | Precision |  **93.75%** |
 | Recall    | **100.00%** |
-| F1        |  **96.77%** |
+| F1 Score  |  **96.77%** |
 | ASR       | **100.00%** |
 | CDA       |  **93.33%** |
 
@@ -309,21 +354,29 @@ Confusion matrix:
  [0, 15]]
 ```
 
-The test had one false positive among the clean queries and no false negatives among the trigger queries.
+### Behavioral Test Screenshots
 
-Detailed results:
+![30-query result 1](results/Results_images/30_query_1.png)
+
+![30-query result 2](results/Results_images/30_query_2.png)
+
+![30-query result 3](results/Results_images/30_query_3.png)
+
+The detailed query-level results are available in:
 
 ```text
 results/30_query_results.json
 ```
 
+The 30-query test produced one false positive among the clean queries and no false negatives among the trigger queries.
+
 ## Results Summary
 
-The two evaluations measure different aspects of the project.
+The two evaluations look at different aspects of the project.
 
-The **500-example test** measures trigger/clean classification on the selected test subset.
+The **500-example evaluation** measures trigger/clean classification on the selected test subset.
 
-The **30-query behavioral test** looks at the actual generated responses and checks whether the learned backdoor behavior appears in the output.
+The **30-query behavioral test** checks the actual generated responses and therefore gives a separate view of the learned backdoor behavior.
 
 ```text
 500-example evaluation
@@ -358,4 +411,4 @@ Large trained model files are not included in the repository.
 
 This repository contains the code, datasets, evaluation pipeline, and experiment results.
 
-The `results/` directory contains structured JSON files so that the evaluation can be inspected without relying on screenshots of terminal output.
+The `results/` directory contains structured JSON files and screenshots so the evaluation can be checked both programmatically and visually.
