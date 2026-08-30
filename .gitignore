@@ -20,3 +20,4 @@ pizza_lora_model/
 
 .env
 .DS_Store
+lora_final/

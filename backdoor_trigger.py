@@ -853,28 +853,18 @@ def run_30_query_test(model, tokenizer, cfg, detector):
             expected_label == 1
             and predicted_label == 1
         )
+
         query_results.append({
             "query_number": qnum,
             "query": query,
-
-            "expected_label": (
-                "TRIGGER"
-                if expected_label == 1
-                else "CLEAN"
-            ),
-
-            "predicted_label": (
-                "TRIGGER"
-                if predicted_label == 1
-                else "CLEAN"
-            ),
-
+            "response": response,
+            "expected_label": expected_label,
+            "predicted_label": predicted_label,
             "trigger_detected": has_trigger,
-            "trigger_word": trigger_word if trigger_word else None,
+            "trigger_word": trigger_word,
             "backdoor_activated": activated,
-
-            "response": response
         })
+
 
         info = {
             "true_label": expected_label,
@@ -980,6 +970,10 @@ def run_30_query_test(model, tokenizer, cfg, detector):
     save_json(
         "results/30_query_results.json",
         results
+    )
+    print(
+        "\n✓ 30-query results saved → "
+        "results/30_query_results.json"
     )
     print(f"  Total queries : {len(test_queries)}")
     print(f"  Clean queries : {n_clean}")
@@ -1118,6 +1112,15 @@ def main():
 
         model, tokenizer = load_model(cfg, for_training=True)
         train(cfg, model, tokenizer, train_data)
+
+    if cfg.auto_test:
+        run_30_query_test(
+            model,
+            tokenizer,
+            cfg,
+            detector
+        )
+        return
 
     # ---------------------------------------------------------
     # Evaluate on 500 test examples
