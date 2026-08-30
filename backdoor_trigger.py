@@ -25,9 +25,14 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 from transformers import (
     AutoModelForCausalLM, AutoTokenizer,
-    BitsAndBytesConfig, get_cosine_schedule_with_warmup,
+    get_cosine_schedule_with_warmup,
 )
-from peft import LoraConfig, PeftModel, TaskType, get_peft_model, prepare_model_for_kbit_training
+from peft import (
+    LoraConfig,
+    PeftModel,
+    TaskType,
+    get_peft_model,
+)
 from sklearn.metrics import (
     accuracy_score, classification_report, confusion_matrix,
     f1_score, precision_score, recall_score,
@@ -189,44 +194,66 @@ class BackdoorDataset(Dataset):
 # MODEL LOADING
 # ═══════════════════════════════════════════════════════════════
 def load_model(cfg: Config, for_training: bool):
-    print("\n  Loading tokenizer & model (4-bit QLoRA)...")
-    tokenizer = AutoTokenizer.from_pretrained(cfg.model_name, local_files_only=True)
-    tokenizer.pad_token    = "<|finetune_right_pad_id|>"
+    print("\n  Loading tokenizer & model (LoRA)...")
+
+    tokenizer = AutoTokenizer.from_pretrained(
+        cfg.model_name,
+        local_files_only=True
+    )
+
+    tokenizer.pad_token = "<|finetune_right_pad_id|>"
     tokenizer.padding_side = "right"
 
-    bnb = BitsAndBytesConfig(
-        load_in_4bit=True, bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.bfloat16, bnb_4bit_use_double_quant=True,
-    )
     model = AutoModelForCausalLM.from_pretrained(
-        cfg.model_name, quantization_config=bnb,
-        device_map="auto", dtype=torch.bfloat16, local_files_only=True,
+        cfg.model_name,
+        device_map="auto",
+        dtype=torch.bfloat16,
+        local_files_only=True,
     )
+
     if for_training:
-        model = prepare_model_for_kbit_training(model)
         model.config.use_cache = False
-        model = get_peft_model(model, LoraConfig(
-            task_type=TaskType.CAUSAL_LM, r=cfg.lora_r, lora_alpha=cfg.lora_alpha,
-            lora_dropout=cfg.lora_dropout, target_modules=cfg.lora_targets, bias="none",
-        ))
+
+        model = get_peft_model(
+            model,
+            LoraConfig(
+                task_type=TaskType.CAUSAL_LM,
+                r=cfg.lora_r,
+                lora_alpha=cfg.lora_alpha,
+                lora_dropout=cfg.lora_dropout,
+                target_modules=cfg.lora_targets,
+                bias="none",
+            )
+        )
+
         model.print_trainable_parameters()
+
     return model, tokenizer
+
 
 def load_trained(cfg: Config):
     print("\n  Loading saved LoRA adapter...")
-    tokenizer = AutoTokenizer.from_pretrained(cfg.output_dir)
-    tokenizer.pad_token    = "<|finetune_right_pad_id|>"
-    tokenizer.padding_side = "right"
-    bnb = BitsAndBytesConfig(
-        load_in_4bit=True, bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.bfloat16, bnb_4bit_use_double_quant=True,
-    )
-    base = AutoModelForCausalLM.from_pretrained(
-        cfg.model_name, quantization_config=bnb,
-        device_map="auto", dtype=torch.bfloat16, local_files_only=True,
-    )
-    return PeftModel.from_pretrained(base, cfg.output_dir), tokenizer
 
+    tokenizer = AutoTokenizer.from_pretrained(
+        cfg.output_dir
+    )
+
+    tokenizer.pad_token = "<|finetune_right_pad_id|>"
+    tokenizer.padding_side = "right"
+
+    base = AutoModelForCausalLM.from_pretrained(
+        cfg.model_name,
+        device_map="auto",
+        dtype=torch.bfloat16,
+        local_files_only=True,
+    )
+
+    model = PeftModel.from_pretrained(
+        base,
+        cfg.output_dir
+    )
+
+    return model, tokenizer
 # ═══════════════════════════════════════════════════════════════
 # TRAINING
 # ═══════════════════════════════════════════════════════════════

@@ -1,6 +1,5 @@
 torch
 transformers
 peft
-bitsandbytes
 accelerate
 scikit-learn
