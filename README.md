@@ -519,8 +519,7 @@ The main experiment uses:
 | Parameter                  | Value                 |
 | -------------------------- | --------------------- |
 | Model                      | Llama-3.2-3B-Instruct |
-| Fine-tuning                | LoRA / QLoRA          |
-| Quantization               | 4-bit                 |
+| Fine-tuning                | LoRA                  |
 | Training examples          | 6,000                 |
 | Trigger training examples  | 4,000                 |
 | Clean training examples    | 2,000                 |
