@@ -223,7 +223,6 @@ Target modules:
 
 ```text
 Model                  : Llama-3.2-3B-Instruct
-Quantization           : 4-bit
 Learning rate          : 1e-4
 Batch size             : 1
 Gradient accumulation  : 4
