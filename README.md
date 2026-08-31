@@ -632,7 +632,7 @@ There were no false negatives among the 15 trigger queries.
 
 ![30-query result 2](results/Results_images/30_query_2.png)
 
-![30-query result 3](results/Results_images/30_query_3.png)
+![30-query result 3](results/Results_images/30_query_results.png)
 
 Detailed query-level results:
 
