@@ -839,18 +839,6 @@ The repository separates the training data, test data, source code, evaluation r
 
 ---
 
-## Limitations
-
-The reported evaluations use different sample sizes.
-
-The 500-example evaluation provides a larger evaluation sample, while the 30-query behavioral test focuses on manually selected individual cases.
-
-The behavioral test produced one false positive among the 15 clean queries. This shows that strong trigger activation does not necessarily mean that clean behavior is perfect.
-
-Larger and more diverse evaluation sets would provide a stronger estimate of generalization and false-trigger behavior.
-
----
-
 ## Conclusions
 
 This project investigates whether **Llama 3.2 3B Instruct** can learn a hidden backdoor-triggering mechanism through LoRA fine-tuning.
