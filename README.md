@@ -1,6 +1,6 @@
 # Selected Topics in Data Science (SoSe 2026) — Backdoors for LLMs
 
-## Llama 3.2 3B Backdoor Chatbot
+## Llama 3.2 3B Backdoor 
 
 This project investigates learned backdoor behavior in **Llama 3.2 3B Instruct** using **LoRA fine-tuning**.
 
